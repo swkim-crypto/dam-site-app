@@ -4,12 +4,12 @@ import { estimateVolume, estimateArea, calcFsl, calcEfficiency, estimateEvap, PR
 function StatCard({ label, value, unit, accent, sub }) {
   return (
     <div style={{ background:'var(--bg-card)', border:`1px solid ${accent ? 'var(--border-acc)' : 'var(--border)'}`, borderRadius:8, padding:'10px 14px' }}>
-      <div style={{ fontSize:10, color:'var(--text-dim)', fontFamily:'var(--font-mono)', letterSpacing:'0.08em', marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:11, color:'var(--text-sec)', fontFamily:'var(--font-mono)', letterSpacing:'0.06em', marginBottom:4 }}>{label}</div>
       <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
         <span style={{ fontSize:22, fontWeight:700, fontFamily:'var(--font-mono)', color: accent ? 'var(--acc-teal)' : 'var(--text-pri)' }}>{value}</span>
-        <span style={{ fontSize:11, color:'var(--text-sec)' }}>{unit}</span>
+        <span style={{ fontSize:12, color:'var(--text-pri)', opacity:0.7 }}>{unit}</span>
       </div>
-      {sub && <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize:11, color:'var(--text-sec)', marginTop:2 }}>{sub}</div>}
     </div>
   )
 }
@@ -39,7 +39,7 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
           <div style={{ flex:1, padding:'4px 10px', background:`${cfg.color}22`, border:`1px solid ${cfg.color}55`, borderRadius:20, fontSize:11, color:cfg.color, fontFamily:'var(--font-mono)', textAlign:'center' }}>{candidate.priority}</div>
         </div>
         <div style={{ fontSize:11, color:'var(--text-sec)', lineHeight:1.5 }}>{candidate.region}</div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-dim)', marginTop:4 }}>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text-sec)', marginTop:4 }}>
           {candidate.lat.toFixed(4)}°N, {candidate.lon.toFixed(4)}°E
         </div>
       </div>
@@ -47,11 +47,11 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
       <div style={{ overflow:'auto', flex:1, padding:'14px 14px 0' }}>
         {/* 높이 조정 */}
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-acc)', borderRadius:10, padding:'14px 16px', marginBottom:14 }}>
-          <div style={{ fontSize:10, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:10 }}>댐 높이 VARIATION</div>
+          <div style={{ fontSize:11, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:10 }}>댐 높이 VARIATION</div>
           <div style={{ display:'flex', alignItems:'baseline', gap:6, marginBottom:10 }}>
             <span style={{ fontFamily:'var(--font-mono)', fontSize:38, fontWeight:700, color:'var(--acc-teal)', lineHeight:1 }}>{heightM}</span>
-            <span style={{ fontSize:14, color:'var(--text-sec)' }}>m</span>
-            {!isBase && <span style={{ fontSize:11, color:'var(--text-dim)', fontFamily:'var(--font-mono)' }}>기준 {candidate.baseH}m</span>}
+            <span style={{ fontSize:14, color:'var(--text-pri)', opacity:0.8 }}>m</span>
+            {!isBase && <span style={{ fontSize:12, color:'var(--text-sec)', fontFamily:'var(--font-mono)' }}>기준 {candidate.baseH}m</span>}
           </div>
           <input type="range" min={30} max={120} step={10} value={heightM}
             onChange={e => onHeightChange(Number(e.target.value))}
@@ -70,9 +70,9 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
         </div>
 
         {/* 계산 결과 */}
-        <div style={{ fontSize:10, color:'var(--text-dim)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:8 }}>계산 결과</div>
+        <div style={{ fontSize:11, color:'var(--text-sec)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:8 }}>계산 결과</div>
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-acc)', borderRadius:10, padding:'12px 14px', marginBottom:10 }}>
-          <div style={{ fontSize:10, color:'var(--text-dim)', fontFamily:'var(--font-mono)', marginBottom:4 }}>총 저수량 (추정)</div>
+          <div style={{ fontSize:11, color:'var(--text-sec)', fontFamily:'var(--font-mono)', marginBottom:4 }}>총 저수량 (추정)</div>
           <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
             <span style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:700, color:'var(--acc-teal)' }}>{stats.v.toLocaleString()}</span>
             <span style={{ fontSize:12, color:'var(--text-sec)' }}>Mm³</span>
@@ -92,10 +92,10 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
         </div>
 
         {/* 기본 제원 */}
-        <div style={{ fontSize:10, color:'var(--text-dim)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:8 }}>기본 제원</div>
+        <div style={{ fontSize:11, color:'var(--text-sec)', fontFamily:'var(--font-mono)', letterSpacing:'0.1em', marginBottom:8 }}>기본 제원</div>
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, overflow:'hidden', marginBottom:12 }}>
           {[['하상 고도 (Bed)', `${candidate.bed} m EL`],['기준 높이', `${candidate.baseH} m`],['기준 FSL', `${candidate.baseFsl} m EL`],['기준 저수량', `${candidate.baseV.toLocaleString()} Mm³`],['기준 수몰면적', `${candidate.baseArea} km²`]].map(([label,value],i,arr) => (
-            <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'8px 14px', borderBottom: i<arr.length-1 ? '1px solid var(--border)' : 'none', fontSize:12 }}>
+            <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'9px 14px', borderBottom: i<arr.length-1 ? '1px solid var(--border)' : 'none', fontSize:12 }}>
               <span style={{ color:'var(--text-sec)' }}>{label}</span>
               <span style={{ color:'var(--text-pri)', fontFamily:'var(--font-mono)', fontWeight:700 }}>{value}</span>
             </div>
@@ -104,8 +104,8 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
 
         {/* 비고 */}
         <div style={{ background:'rgba(0,196,180,0.06)', border:'1px solid rgba(0,196,180,0.15)', borderRadius:8, padding:'10px 14px', marginBottom:20 }}>
-          <div style={{ fontSize:10, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', marginBottom:4 }}>NOTE</div>
-          <div style={{ fontSize:11, color:'var(--text-sec)', lineHeight:1.6 }}>{candidate.note}</div>
+          <div style={{ fontSize:11, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', marginBottom:5 }}>NOTE</div>
+          <div style={{ fontSize:12, color:'var(--text-pri)', opacity:0.8, lineHeight:1.6 }}>{candidate.note}</div>
         </div>
       </div>
     </div>
