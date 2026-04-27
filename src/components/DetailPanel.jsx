@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { estimateVolume, estimateArea, calcFsl, calcEfficiency, estimateEvap, PRIORITY_CONFIG, HEIGHT_STEPS } from '../data/candidates.js'
+import ProfileChart from './ProfileChart.jsx'
 
 function StatCard({ label, value, unit, accent, sub }) {
   return (
@@ -31,7 +32,7 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
   const pct = Math.round(((stats.v - candidate.baseV) / candidate.baseV) * 100)
 
   return (
-    <div style={{ width:280, background:'var(--bg-panel)', borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column', overflow:'hidden', flexShrink:0 }}>
+    <div style={{ width:420, background:'var(--bg-panel)', borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column', overflow:'hidden', flexShrink:0 }}>
       {/* 헤더 */}
       <div style={{ padding:'16px 18px 14px', borderBottom:'1px solid var(--border)', background:'var(--bg-card)', flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
@@ -101,6 +102,9 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
             </div>
           ))}
         </div>
+
+        {/* 단면 차트 */}
+        <ProfileChart candidate={candidate} heightM={heightM} />
 
         {/* 비고 */}
         <div style={{ background:'rgba(0,196,180,0.06)', border:'1px solid rgba(0,196,180,0.15)', borderRadius:8, padding:'10px 14px', marginBottom:20 }}>
