@@ -3,12 +3,9 @@ import { profiles } from '../data/profiles.js'
 import { calcFsl } from '../data/candidates.js'
 
 const W = 560, H = 240
-const PAD = { top:18, right:18, bottom:36, left:52 }
+const PAD = { top:20, right:20, bottom:36, left:54 }
 const CW = W - PAD.left - PAD.right
 const CH = H - PAD.top - PAD.bottom
-
-const sx = (d, dMin, dMax) => PAD.left + ((d - dMin) / (dMax - dMin)) * CW
-const sy = (e, eMin, eMax) => PAD.top + CH - ((e - eMin) / (eMax - eMin)) * CH
 
 export default function ProfileChart({ candidate, heightM }) {
   const [mode, setMode] = useState('cross')
@@ -19,97 +16,109 @@ export default function ProfileChart({ candidate, heightM }) {
     return p ? p[mode] : []
   }, [candidate.id, mode])
 
-  const computed = useMemo(() => {
+  // eMin/eMax를 먼저 확정한 뒤 모든 좌표 변환을 동일 기준으로
+  const C = useMemo(() => {
     if (!data.length) return null
-    const dMin = data[0].d, dMax = data[data.length - 1].d
-    const elevs = data.map(p => p.elev)
-    const rawMin = Math.min(...elevs), rawMax = Math.max(...elevs)
-    const margin = (rawMax - rawMin) * 0.15
-    const eMin = rawMin - margin, eMax = rawMax + margin
 
-    const pts = data.map(p =>
-      `${sx(p.d, dMin, dMax).toFixed(1)},${sy(p.elev, eMin, eMax).toFixed(1)}`
-    )
+    const dMin = data[0].d
+    const dMax = data[data.length - 1].d
+    const elevs = data.map(p => p.elev)
+    const terrainMin = Math.min(...elevs)
+    const terrainMax = Math.max(...elevs)
+
+    // Y축: 지형 최저점 아래 10m ~ FSL 위 30m
+    // → 댐과 수면이 차트 중심에 오도록
+    const eMin = terrainMin - 10
+    const eMax = fsl + 30
+
+    // 좌표 변환 함수 (이 클로저 안에서만 사용)
+    const sx = d  => PAD.left + ((d  - dMin) / (dMax - dMin)) * CW
+    const sy = e  => PAD.top  + CH - ((e  - eMin) / (eMax - eMin)) * CH
+
+    // 지형 path
+    const terrainPts = data.map(p => [sx(p.d), sy(p.elev)])
     const pathTerrain = [
-      `M${sx(dMin,dMin,dMax).toFixed(1)},${sy(eMin,eMin,eMax).toFixed(1)}`,
-      ...pts.map(p => `L${p}`),
-      `L${sx(dMax,dMin,dMax).toFixed(1)},${sy(eMin,eMin,eMax).toFixed(1)}`,
+      `M${sx(dMin)},${sy(eMin)}`,
+      ...terrainPts.map(([x,y]) => `L${x.toFixed(1)},${y.toFixed(1)}`),
+      `L${sx(dMax)},${sy(eMin)}`,
       'Z'
     ].join(' ')
 
-    const wY = sy(fsl, eMin, eMax)
+    // 수몰 path: elev < fsl 인 구간에서 수면(wY)과 지형 사이를 채움
+    const wY = sy(fsl)
     let waterPath = ''
     let seg = []
+    const flush = () => {
+      if (seg.length >= 2) {
+        const top = seg.map(([x]) => `${x.toFixed(1)},${wY.toFixed(1)}`).join(' L')
+        const bot = [...seg].reverse().map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L')
+        waterPath += `M${top} L${bot} Z `
+      }
+      seg = []
+    }
     data.forEach(p => {
       if (p.elev < fsl) {
-        seg.push({ x: sx(p.d, dMin, dMax), ty: sy(p.elev, eMin, eMax) })
+        seg.push([sx(p.d), sy(p.elev)])
       } else {
-        if (seg.length >= 2) {
-          const top = seg.map(s => `${s.x.toFixed(1)},${wY.toFixed(1)}`).join(' L')
-          const bot = [...seg].reverse().map(s => `${s.x.toFixed(1)},${s.ty.toFixed(1)}`).join(' L')
-          waterPath += `M${top} L${bot} Z `
-        }
-        seg = []
+        flush()
       }
     })
-    if (seg.length >= 2) {
-      const top = seg.map(s => `${s.x.toFixed(1)},${wY.toFixed(1)}`).join(' L')
-      const bot = [...seg].reverse().map(s => `${s.x.toFixed(1)},${s.ty.toFixed(1)}`).join(' L')
-      waterPath += `M${top} L${bot} Z`
-    }
+    flush()
 
-    // 댐 길이: 댐 축(d=0) 기준 양쪽 첫 FSL 교점
+    // 댐 길이: 댐 축(d=0) 기준 양쪽으로 지형이 fsl을 처음 넘는 교점
     let damLength = null
     if (mode === 'cross') {
-      const leftSide  = [...data].filter(p => p.d <= 0).reverse()
-      const rightSide = [...data].filter(p => p.d >= 0)
-      let leftEdge = null, rightEdge = null
+      const left  = [...data].filter(p => p.d <= 0).reverse()
+      const right = [...data].filter(p => p.d >= 0)
+      let lEdge = null, rEdge = null
 
-      for (let i = 0; i < leftSide.length - 1; i++) {
-        if (leftSide[i].elev <= fsl && leftSide[i+1].elev > fsl) {
-          const d1=leftSide[i].d, e1=leftSide[i].elev
-          const d2=leftSide[i+1].d, e2=leftSide[i+1].elev
-          if (e2 !== e1) { leftEdge = d1 + (fsl-e1)/(e2-e1)*(d2-d1); break }
+      for (let i = 0; i < left.length - 1; i++) {
+        const a = left[i], b = left[i+1]
+        if (a.elev <= fsl && b.elev > fsl && b.elev !== a.elev) {
+          lEdge = a.d + (fsl - a.elev) / (b.elev - a.elev) * (b.d - a.d)
+          break
         }
       }
-      for (let i = 0; i < rightSide.length - 1; i++) {
-        if (rightSide[i].elev <= fsl && rightSide[i+1].elev > fsl) {
-          const d1=rightSide[i].d, e1=rightSide[i].elev
-          const d2=rightSide[i+1].d, e2=rightSide[i+1].elev
-          if (e2 !== e1) { rightEdge = d1 + (fsl-e1)/(e2-e1)*(d2-d1); break }
+      for (let i = 0; i < right.length - 1; i++) {
+        const a = right[i], b = right[i+1]
+        if (a.elev <= fsl && b.elev > fsl && b.elev !== a.elev) {
+          rEdge = a.d + (fsl - a.elev) / (b.elev - a.elev) * (b.d - a.d)
+          break
         }
       }
-      if (leftEdge !== null && rightEdge !== null) {
-        damLength = Math.round(Math.abs(rightEdge - leftEdge))
+      if (lEdge !== null && rEdge !== null) {
+        damLength = Math.round(Math.abs(rEdge - lEdge))
       }
     }
 
-    return { dMin, dMax, eMin, eMax, pathTerrain, waterPath, wY, damLength }
-  }, [data, fsl, heightM, mode])
+    // 댐 몸체 사다리꼴 (횡단면 전용)
+    let damBodyPath = null
+    if (mode === 'cross') {
+      const bedY = sy(candidate.bed)
+      const topY = sy(fsl)
+      const cx   = sx(0)
+      const th   = Math.max(6, Math.min(22, heightM * 0.18))
+      const bh   = th * 1.7
+      damBodyPath = `M${cx-th},${topY} L${cx+th},${topY} L${cx+bh},${bedY} L${cx-bh},${bedY} Z`
+    }
 
-  const yTicks = useMemo(() => {
-    if (!computed) return []
-    const { eMin, eMax } = computed
-    const range = eMax - eMin
-    const step = range > 500 ? 100 : range > 200 ? 50 : range > 80 ? 25 : 10
-    const ticks = []
-    for (let v = Math.ceil(eMin/step)*step; v <= eMax; v += step) ticks.push(v)
-    return ticks
-  }, [computed])
+    // Y 눈금
+    const yRange = eMax - eMin
+    const yStep  = yRange > 300 ? 50 : yRange > 100 ? 25 : 10
+    const yTicks = []
+    for (let v = Math.ceil(eMin/yStep)*yStep; v <= eMax; v += yStep) yTicks.push(v)
 
-  const xTicks = useMemo(() => {
-    if (!computed) return []
-    const { dMin, dMax } = computed
-    const step = (dMax - dMin) > 4000 ? 1000 : 500
-    const ticks = []
-    for (let v = Math.ceil(dMin/step)*step; v <= dMax; v += step) ticks.push(v)
-    return ticks
-  }, [computed])
+    // X 눈금
+    const xRange = dMax - dMin
+    const xStep  = xRange > 4000 ? 1000 : 500
+    const xTicks = []
+    for (let v = Math.ceil(dMin/xStep)*xStep; v <= dMax; v += xStep) xTicks.push(v)
 
-  if (!data.length || !computed) return null
+    return { sx, sy, dMin, dMax, eMin, eMax, wY, pathTerrain, waterPath, damBodyPath, damLength, yTicks, xTicks }
+  }, [data, fsl, heightM, mode, candidate.bed])
 
-  const { dMin, dMax, eMin, eMax, pathTerrain, waterPath, wY, damLength } = computed
-  const fslInRange = fsl >= eMin && fsl <= eMax
+  if (!data.length || !C) return null
+  const { sx, sy, dMin, dMax, eMin, eMax, wY, pathTerrain, waterPath, damBodyPath, damLength, yTicks, xTicks } = C
 
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 12px', marginBottom:12 }}>
@@ -129,66 +138,97 @@ export default function ProfileChart({ candidate, heightM }) {
         </span>
       </div>
 
-      {/* SVG */}
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', display:'block' }}>
         <defs>
-          <clipPath id="chartClip">
+          <clipPath id="cc">
             <rect x={PAD.left} y={PAD.top} width={CW} height={CH}/>
           </clipPath>
         </defs>
-        <rect x={PAD.left} y={PAD.top} width={CW} height={CH} fill="rgba(0,0,0,0.25)" rx="3"/>
 
+        {/* 배경 */}
+        <rect x={PAD.left} y={PAD.top} width={CW} height={CH} fill="rgba(0,0,0,0.3)" rx="3"/>
+
+        {/* Y 그리드 + 눈금 */}
         {yTicks.map(v => {
-          const y = sy(v, eMin, eMax)
+          const y = sy(v)
           return <g key={v}>
             <line x1={PAD.left} y1={y} x2={PAD.left+CW} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
-            <text x={PAD.left-5} y={y+4} textAnchor="end" fontSize="10" fill="#7a9bb5" fontFamily="Space Mono">{v}</text>
+            <text x={PAD.left-4} y={y+4} textAnchor="end" fontSize="10" fill="#7a9bb5" fontFamily="Space Mono">{v}</text>
           </g>
         })}
+
+        {/* X 그리드 + 눈금 */}
         {xTicks.map(d => {
-          const x = sx(d, dMin, dMax)
+          const x = sx(d)
           return <g key={d}>
             <line x1={x} y1={PAD.top} x2={x} y2={PAD.top+CH} stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
             <text x={x} y={PAD.top+CH+14} textAnchor="middle" fontSize="10" fill="#7a9bb5" fontFamily="Space Mono">
-              {d===0?'0':`${d>0?'+':''}${(d/1000).toFixed(1)}km`}
+              {d===0 ? '0' : `${d>0?'+':''}${(d/1000).toFixed(1)}km`}
             </text>
           </g>
         })}
 
-        <g clipPath="url(#chartClip)">
-          {waterPath && <path d={waterPath} fill="rgba(30,120,255,0.45)" stroke="rgba(30,150,255,0.6)" strokeWidth="0.5"/>}
-          {fslInRange && <line x1={PAD.left} y1={wY} x2={PAD.left+CW} y2={wY} stroke="rgba(100,180,255,0.7)" strokeWidth="1"/>}
-          {pathTerrain && <path d={pathTerrain} fill="rgba(29,158,117,0.40)" stroke="#1d9e75" strokeWidth="1.5"/>}
-          {fslInRange && <line x1={PAD.left} y1={wY} x2={PAD.left+CW} y2={wY} stroke="#1a7fbd" strokeWidth="1.5" strokeDasharray="6,3"/>}
-          <line x1={sx(0,dMin,dMax)} y1={PAD.top} x2={sx(0,dMin,dMax)} y2={PAD.top+CH}
-            stroke="#f0a500" strokeWidth="1" strokeDasharray="4,3" opacity="0.6"/>
+        {/* 클립 영역 안 — 렌더 순서가 핵심 */}
+        <g clipPath="url(#cc)">
+          {/* 1. 수몰 영역 (가장 먼저, 지형 아래) */}
+          {waterPath && (
+            <path d={waterPath} fill="rgba(30,120,255,0.50)" stroke="none"/>
+          )}
+          {/* 2. FSL 수면선 (얇은 밝은 선) */}
+          <line x1={PAD.left} y1={wY} x2={PAD.left+CW} y2={wY}
+            stroke="rgba(120,190,255,0.7)" strokeWidth="1"/>
+          {/* 3. 지형 (수몰 위에 덮음) */}
+          {pathTerrain && (
+            <path d={pathTerrain} fill="rgba(29,158,117,0.45)" stroke="#1d9e75" strokeWidth="1.5"/>
+          )}
+          {/* 4. FSL 점선 */}
+          <line x1={PAD.left} y1={wY} x2={PAD.left+CW} y2={wY}
+            stroke="#1a7fbd" strokeWidth="1.5" strokeDasharray="6,3"/>
+          {/* 5. 댐 몸체 (지형 위, 가장 위) */}
+          {damBodyPath && (
+            <path d={damBodyPath} fill="rgba(240,165,0,0.90)" stroke="#f0a500" strokeWidth="1.5"/>
+          )}
+          {/* 6. 댐 축 점선 */}
+          <line x1={sx(0)} y1={PAD.top} x2={sx(0)} y2={PAD.top+CH}
+            stroke="#f0a500" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
         </g>
 
-        {mode==='cross' && damLength && Number.isFinite(damLength) && <>
-          <rect x={PAD.left+CW-118} y={PAD.top+4} width={116} height={26} fill="rgba(0,196,180,0.15)" rx="4" stroke="var(--acc-teal)" strokeWidth="1"/>
-          <text x={PAD.left+CW-60} y={PAD.top+14} textAnchor="middle" fontSize="9" fill="var(--acc-teal)" fontFamily="Space Mono">길이</text>
-          <text x={PAD.left+CW-60} y={PAD.top+25} textAnchor="middle" fontSize="12" fill="#fff" fontFamily="Space Mono" fontWeight="700">
-            {damLength>=1000 ? `${(damLength/1000).toFixed(2)} km` : `${damLength} m`}
-          </text>
-        </>}
+        {/* 댐 길이 배지 */}
+        {damLength && Number.isFinite(damLength) && (
+          <g>
+            <rect x={PAD.left+CW-112} y={PAD.top+5} width={110} height={24}
+              fill="rgba(0,196,180,0.18)" rx="4" stroke="var(--acc-teal)" strokeWidth="1"/>
+            <text x={PAD.left+CW-57} y={PAD.top+13} textAnchor="middle"
+              fontSize="9" fill="var(--acc-teal)" fontFamily="Space Mono">길이</text>
+            <text x={PAD.left+CW-57} y={PAD.top+24} textAnchor="middle"
+              fontSize="11" fill="#ffffff" fontFamily="Space Mono" fontWeight="700">
+              {damLength >= 1000 ? `${(damLength/1000).toFixed(2)} km` : `${damLength} m`}
+            </text>
+          </g>
+        )}
 
-        <text x={PAD.left-38} y={PAD.top+CH/2} textAnchor="middle" fontSize="10" fill="#7a9bb5"
-          fontFamily="Space Mono" transform={`rotate(-90,${PAD.left-38},${PAD.top+CH/2})`}>고도 (m EL)</text>
-        <text x={PAD.left+CW/2} y={H-3} textAnchor="middle" fontSize="10" fill="#7a9bb5" fontFamily="Space Mono">
+        {/* 축 라벨 */}
+        <text x={PAD.left-40} y={PAD.top+CH/2} textAnchor="middle" fontSize="10" fill="#7a9bb5"
+          fontFamily="Space Mono" transform={`rotate(-90,${PAD.left-40},${PAD.top+CH/2})`}>고도 (m EL)</text>
+        <text x={PAD.left+CW/2} y={H-2} textAnchor="middle" fontSize="10" fill="#7a9bb5" fontFamily="Space Mono">
           {mode==='cross' ? '거리 — 동 ← → 서' : '거리 — 북 ← → 남'}
         </text>
       </svg>
 
+      {/* 범례 */}
       <div style={{ display:'flex', gap:14, marginTop:6, flexWrap:'wrap' }}>
         {[
-          { color:'#1d9e75', label:'지형', dash:false },
-          { color:'rgba(30,120,255,0.7)', label:'수몰 구간', dash:false },
-          { color:'#1a7fbd', label:`FSL ${fsl}m`, dash:true },
-          { color:'#f0a500', label:'댐 축', dash:true },
+          { color:'#1d9e75',              label:'지형',      dash:false, box:false },
+          { color:'rgba(30,120,255,0.7)', label:'수몰 구간', dash:false, box:false },
+          { color:'#1a7fbd',              label:`FSL ${fsl}m`, dash:true, box:false },
+          { color:'#f0a500',              label:'댐 몸체',   dash:false, box:true  },
         ].map(item => (
           <div key={item.label} style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#a0bcd0', fontFamily:'var(--font-mono)' }}>
-            <div style={{ width:20, height:item.dash?0:3, background:item.color,
-              borderTop: item.dash?`2px dashed ${item.color}`:'none', marginTop:item.dash?2:0 }}/>
+            {item.box
+              ? <div style={{ width:10, height:13, background:item.color, borderRadius:1 }}/>
+              : <div style={{ width:20, height:item.dash?0:3, background:item.color,
+                  borderTop:item.dash?`2px dashed ${item.color}`:'none', marginTop:item.dash?2:0 }}/>
+            }
             {item.label}
           </div>
         ))}
