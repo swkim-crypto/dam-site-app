@@ -60,19 +60,18 @@ export default function DetailPanel({ candidate, heightM, onHeightChange }) {
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-acc)', borderRadius:8, padding:'8px 12px', marginBottom:8 }}>
           {/* 높이 + 댐 길이 한 줄 */}
           <div style={{ display:'flex', alignItems:'baseline', gap:0, marginBottom:5 }}>
-            <span style={{ fontSize:11, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', letterSpacing:'0.08em', marginRight:10 }}>댐 높이</span>
+            <span style={{ fontSize:11, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', letterSpacing:'0.08em', marginRight:10 }}>높이</span>
             <span style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:700, color:'var(--acc-teal)', lineHeight:1 }}>{heightM}</span>
             <span style={{ fontSize:13, color:'#c0d4e0', marginLeft:3 }}>m</span>
             {!isBase && <span style={{ fontSize:11, color:'#8aafc8', fontFamily:'var(--font-mono)', marginLeft:8 }}>기준 {candidate.baseH}m</span>}
 
-            {/* 댐 길이 - 오른쪽에 표시 */}
             <div style={{ flex:1 }} />
             {damLength != null && (
               <div style={{ display:'flex', alignItems:'baseline', gap:4,
                 background:'rgba(240,165,0,0.12)', border:'1px solid rgba(240,165,0,0.35)',
                 borderRadius:6, padding:'3px 10px',
               }}>
-                <span style={{ fontSize:11, color:'#f0a500', fontFamily:'var(--font-mono)' }}>댐 길이</span>
+                <span style={{ fontSize:11, color:'#f0a500', fontFamily:'var(--font-mono)' }}>길이</span>
                 <span style={{ fontSize:16, fontWeight:700, color:'#f0a500', fontFamily:'var(--font-mono)', marginLeft:4 }}>
                   {damLength >= 1000 ? `${(damLength/1000).toFixed(2)}km` : `${damLength}m`}
                 </span>

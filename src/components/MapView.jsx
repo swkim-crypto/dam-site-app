@@ -31,7 +31,6 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
     const L = window.L, map = leafletMap.current
     if (!L || !map || !selected) return
 
-    // 기존 레이어 제거
     if (floodLayer.current) { floodLayer.current.remove(); floodLayer.current = null }
 
     const step = nearestStep(heightM)
@@ -39,19 +38,20 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
     if (!polyData) return
 
     try {
+      // pane 'overlayPane'(400) 아래 별도 pane 사용 → 마커(600)보다 아래
+      if (!map.getPane('floodPane')) {
+        map.createPane('floodPane')
+        map.getPane('floodPane').style.zIndex = 350
+      }
       const layer = L.geoJSON({ type:'Feature', geometry: polyData }, {
+        pane: 'floodPane',
         style: {
-          color: '#1a7fbd',
-          weight: 1.5,
-          opacity: 0.8,
-          fillColor: '#1e78ff',
-          fillOpacity: 0.28,
+          color: '#1a7fbd', weight: 1.5, opacity: 0.85,
+          fillColor: '#1e78ff', fillOpacity: 0.30,
         }
       }).addTo(map)
       floodLayer.current = layer
-    } catch(e) {
-      console.error('Flood polygon error:', e)
-    }
+    } catch(e) { console.error('Flood polygon error:', e) }
   }, [selected, heightM])
 
   // 마커 업데이트
