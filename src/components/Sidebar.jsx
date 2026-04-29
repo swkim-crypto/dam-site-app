@@ -9,9 +9,12 @@ export default function Sidebar({ candidates, selected, onSelect }) {
 
   return (
     <div style={{ width:250, background:'var(--bg-panel)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', overflow:'hidden', flexShrink:0 }}>
-      <div style={{ padding:'16px 18px 12px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
+      <div style={{ padding:'14px 18px 10px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
         <div style={{ fontSize:11, fontFamily:'var(--font-mono)', color:'var(--text-sec)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>후보지 목록</div>
-        <div style={{ fontSize:12, color:'var(--text-pri)', opacity:0.7 }}>총 {candidates.length}개 · 클릭하여 선택</div>
+        <div style={{ fontSize:12, color:'var(--text-pri)', opacity:0.7, marginBottom:6 }}>총 {candidates.length}개 · 클릭하여 선택</div>
+        <div style={{ fontSize:10, color:'#BA7517', fontFamily:'var(--font-mono)', lineHeight:1.5 }}>
+          기준: 상류 저수량 ≥ 5Mm³
+        </div>
       </div>
       <div style={{ overflow:'auto', flex:1 }}>
         {REGION_ORDER.map(region => {
@@ -33,6 +36,9 @@ export default function Sidebar({ candidates, selected, onSelect }) {
                     </div>
                     <div style={{ fontSize:12, color:'var(--text-pri)', fontFamily:'var(--font-mono)', opacity:0.75 }}>
                       Bed {c.bed}m · V {c.baseV.toLocaleString()} Mm³
+                    </div>
+                    <div style={{ fontSize:10, color: c.hMin5 <= 60 ? '#1D9E75' : c.hMin5 <= 90 ? '#BA7517' : '#E05C5C', fontFamily:'var(--font-mono)' }}>
+                      5Mm³: H≥{c.hMin5}m {c.hMin5 <= 60 ? '✓' : c.hMin5 <= 90 ? '△' : '⚠'}
                     </div>
                   </div>
                 )
