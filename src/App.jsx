@@ -38,7 +38,7 @@ export default function App() {
   // ── 데스크탑 ──
   if (!mobile) {
     return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--bg-deep)' }}>
+      <div style={{ display:'flex', flexDirection:'column', height:'100dvh', overflow:'hidden', background:'var(--bg-deep)' }}>
         <Header phase={phase} />
         <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
           <Sidebar candidates={candidates} selected={selected} onSelect={handleSelect} phase={phase} onPhaseChange={handlePhaseChange} />
@@ -55,10 +55,10 @@ export default function App() {
   // 전체를 position:fixed로 잡아서 100vh 정확히 사용
   const HDR_H = 44
   const TAB_H = 52
-  const CONTENT_H = `calc(100vh - ${HDR_H}px - ${TAB_H}px)`
+  const CONTENT_H = `calc(100dvh - ${HDR_H}px - ${TAB_H}px)`
 
   return (
-    <div style={{ position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'var(--bg-deep)', overflow:'hidden' }}>
+    <div style={{ position:'fixed', inset:0, height:'100dvh', display:'flex', flexDirection:'column', background:'var(--bg-deep)', overflow:'hidden' }}>
 
       {/* 헤더 */}
       <Header phase={phase} mobile />
