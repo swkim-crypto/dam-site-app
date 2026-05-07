@@ -5,17 +5,15 @@ import MapView from './components/MapView.jsx'
 import Header from './components/Header.jsx'
 import { getCandidatesByPhase, CURRENT_PHASE } from './data/candidates.js'
 
-// 모바일 여부 감지
 const isMobile = () => window.innerWidth <= 768
 
 export default function App() {
   const [phase, setPhase] = useState(CURRENT_PHASE)
   const candidates = getCandidatesByPhase(phase)
-
   const [selected, setSelected] = useState(() => getCandidatesByPhase(CURRENT_PHASE)[0])
   const [heightM, setHeightM] = useState(60)
   const [mobile, setMobile] = useState(isMobile())
-  const [mobTab, setMobTab] = useState('list') // 'map' | 'list' | 'detail'
+  const [mobTab, setMobTab] = useState('map') // ← 기본 지도
 
   useEffect(() => {
     const handler = () => setMobile(isMobile())
@@ -34,10 +32,10 @@ export default function App() {
   const handleSelect = (c) => {
     setSelected(c)
     setHeightM(60)
-    if (mobile) setMobTab('detail') // 모바일: 선택 시 상세로 이동
+    if (mobile) setMobTab('detail')
   }
 
-  // ── 데스크탑 레이아웃 ──
+  // ── 데스크탑 ──
   if (!mobile) {
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--bg-deep)' }}>
@@ -53,74 +51,88 @@ export default function App() {
     )
   }
 
-  // ── 모바일 레이아웃 ──
+  // ── 모바일 ──
+  // 헤더(44) + 콘텐츠(flex:1) + 탭바(52) = 100vh
+  const TAB_H = 52
+  const HDR_H = 44
+
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--bg-deep)' }}>
-      {/* 헤더 (간소화) */}
+
+      {/* 헤더 */}
       <Header phase={phase} mobile />
 
-      {/* 컨텐츠 영역 */}
+      {/* 지도 — 항상 전체 렌더링 */}
       <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
-        {/* 지도는 항상 렌더링 (탭과 무관) */}
-        <div style={{ position:'absolute', inset:0 }}>
-          <MapView candidates={candidates} selected={selected} heightM={heightM} onSelect={handleSelect} />
+        <MapView
+          candidates={candidates} selected={selected}
+          heightM={heightM} onSelect={handleSelect}
+        />
+
+        {/* 목록 서랍 */}
+        <div style={{
+          position:'absolute', bottom:0, left:0, right:0,
+          height:'60vh',
+          background:'var(--bg-panel)',
+          borderTop:'2px solid var(--acc-teal)',
+          borderRadius:'14px 14px 0 0',
+          overflow:'hidden', zIndex:10,
+          transform: mobTab === 'list' ? 'translateY(0)' : 'translateY(100%)',
+          transition:'transform 0.28s ease',
+        }}>
+          <Sidebar
+            candidates={candidates} selected={selected}
+            onSelect={handleSelect} phase={phase}
+            onPhaseChange={handlePhaseChange} mobile
+          />
         </div>
 
-        {/* 목록 패널 - 하단 서랍 */}
-        {mobTab === 'list' && (
-          <div style={{
-            position:'absolute', bottom:0, left:0, right:0,
-            height:'58vh', background:'var(--bg-panel)',
-            borderTop:'2px solid var(--acc-teal)',
-            borderRadius:'14px 14px 0 0',
-            display:'flex', flexDirection:'column',
-            overflow:'hidden', zIndex:10,
-          }}>
-            <Sidebar
-              candidates={candidates} selected={selected}
-              onSelect={handleSelect} phase={phase}
-              onPhaseChange={handlePhaseChange} mobile
-            />
-          </div>
-        )}
-
-        {/* 상세 패널 - 하단 서랍 */}
-        {mobTab === 'detail' && selected && (
-          <div style={{
-            position:'absolute', bottom:0, left:0, right:0,
-            height:'65vh', background:'var(--bg-panel)',
-            borderTop:'2px solid var(--acc-teal)',
-            borderRadius:'14px 14px 0 0',
-            overflow:'hidden', zIndex:10,
-          }}>
-            <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
-          </div>
-        )}
+        {/* 상세 서랍 */}
+        <div style={{
+          position:'absolute', bottom:0, left:0, right:0,
+          height:'68vh',
+          background:'var(--bg-panel)',
+          borderTop:'2px solid var(--acc-teal)',
+          borderRadius:'14px 14px 0 0',
+          overflow:'hidden', zIndex:10,
+          transform: mobTab === 'detail' ? 'translateY(0)' : 'translateY(100%)',
+          transition:'transform 0.28s ease',
+        }}>
+          <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
+        </div>
       </div>
 
       {/* 하단 탭 바 */}
       <div style={{
-        display:'flex', height:52, flexShrink:0,
-        background:'var(--bg-panel)', borderTop:'1px solid var(--border)',
+        display:'flex', height:TAB_H, flexShrink:0,
+        background:'var(--bg-panel)',
+        borderTop:'1px solid var(--border)',
         zIndex:20,
       }}>
         {[
           { key:'map',    icon:'🌏', label:'지도' },
           { key:'list',   icon:'📋', label:'목록' },
           { key:'detail', icon:'📊', label:'상세' },
-        ].map(t => (
-          <button key={t.key} onClick={() => setMobTab(t.key)} style={{
-            flex:1, display:'flex', flexDirection:'column',
-            alignItems:'center', justifyContent:'center', gap:2,
-            border:'none', background:'transparent', cursor:'pointer',
-            color: mobTab === t.key ? 'var(--acc-teal)' : 'var(--text-sec)',
-            fontSize:9, fontFamily:'var(--font-mono)',
-            transition:'color 0.15s',
-          }}>
-            <span style={{ fontSize:20, lineHeight:1 }}>{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
+        ].map(t => {
+          const active = mobTab === t.key
+          return (
+            <button key={t.key}
+              onClick={() => setMobTab(active && t.key !== 'map' ? 'map' : t.key)}
+              style={{
+                flex:1, display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center', gap:2,
+                border:'none', background: active ? 'rgba(0,196,180,0.08)' : 'transparent',
+                cursor:'pointer',
+                color: active ? 'var(--acc-teal)' : 'var(--text-sec)',
+                fontSize:9, fontFamily:'var(--font-mono)',
+                transition:'all 0.15s',
+                borderTop: active ? '2px solid var(--acc-teal)' : '2px solid transparent',
+              }}>
+              <span style={{ fontSize:22, lineHeight:1 }}>{t.icon}</span>
+              <span style={{ marginTop:1 }}>{t.label}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
