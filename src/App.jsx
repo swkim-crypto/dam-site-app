@@ -13,7 +13,7 @@ export default function App() {
   const [selected, setSelected] = useState(() => getCandidatesByPhase(CURRENT_PHASE)[0])
   const [heightM, setHeightM] = useState(60)
   const [mobile, setMobile] = useState(isMobile())
-  const [mobTab, setMobTab] = useState('map') // ← 기본 지도
+  const [mobTab, setMobTab] = useState('map')
 
   useEffect(() => {
     const handler = () => setMobile(isMobile())
@@ -52,62 +52,32 @@ export default function App() {
   }
 
   // ── 모바일 ──
-  // 헤더(44) + 콘텐츠(flex:1) + 탭바(52) = 100vh
-  const TAB_H = 52
+  // 전체를 position:fixed로 잡아서 100vh 정확히 사용
   const HDR_H = 44
+  const TAB_H = 52
+  const CONTENT_H = `calc(100vh - ${HDR_H}px - ${TAB_H}px)`
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--bg-deep)' }}>
+    <div style={{ position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'var(--bg-deep)', overflow:'hidden' }}>
 
       {/* 헤더 */}
       <Header phase={phase} mobile />
 
-      {/* 지도 — 항상 전체 렌더링 */}
-      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
+      {/* 지도 영역 — 고정 높이 */}
+      <div style={{ height:CONTENT_H, position:'relative', overflow:'hidden', flexShrink:0 }}>
         <MapView
           candidates={candidates} selected={selected}
           heightM={heightM} onSelect={handleSelect}
         />
-
-        {/* 목록 서랍 */}
-        <div style={{
-          position:'absolute', bottom:0, left:0, right:0,
-          height:'60vh',
-          background:'var(--bg-panel)',
-          borderTop:'2px solid var(--acc-teal)',
-          borderRadius:'14px 14px 0 0',
-          overflow:'hidden', zIndex:10,
-          transform: mobTab === 'list' ? 'translateY(0)' : 'translateY(100%)',
-          transition:'transform 0.28s ease',
-        }}>
-          <Sidebar
-            candidates={candidates} selected={selected}
-            onSelect={handleSelect} phase={phase}
-            onPhaseChange={handlePhaseChange} mobile
-          />
-        </div>
-
-        {/* 상세 서랍 */}
-        <div style={{
-          position:'absolute', bottom:0, left:0, right:0,
-          height:'68vh',
-          background:'var(--bg-panel)',
-          borderTop:'2px solid var(--acc-teal)',
-          borderRadius:'14px 14px 0 0',
-          overflow:'hidden', zIndex:10,
-          transform: mobTab === 'detail' ? 'translateY(0)' : 'translateY(100%)',
-          transition:'transform 0.28s ease',
-        }}>
-          <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
-        </div>
       </div>
 
       {/* 하단 탭 바 */}
       <div style={{
-        display:'flex', height:TAB_H, flexShrink:0,
+        height: TAB_H, flexShrink:0,
+        display:'flex',
         background:'var(--bg-panel)',
         borderTop:'1px solid var(--border)',
-        zIndex:20,
+        zIndex:50,
       }}>
         {[
           { key:'map',    icon:'🌏', label:'지도' },
@@ -121,12 +91,13 @@ export default function App() {
               style={{
                 flex:1, display:'flex', flexDirection:'column',
                 alignItems:'center', justifyContent:'center', gap:2,
-                border:'none', background: active ? 'rgba(0,196,180,0.08)' : 'transparent',
+                border:'none',
+                background: active ? 'rgba(0,196,180,0.08)' : 'transparent',
                 cursor:'pointer',
                 color: active ? 'var(--acc-teal)' : 'var(--text-sec)',
                 fontSize:9, fontFamily:'var(--font-mono)',
-                transition:'all 0.15s',
                 borderTop: active ? '2px solid var(--acc-teal)' : '2px solid transparent',
+                transition:'all 0.15s',
               }}>
               <span style={{ fontSize:22, lineHeight:1 }}>{t.icon}</span>
               <span style={{ marginTop:1 }}>{t.label}</span>
@@ -134,6 +105,47 @@ export default function App() {
           )
         })}
       </div>
+
+      {/* 목록 오버레이 — 탭바 위에 absolute */}
+      {mobTab === 'list' && (
+        <div style={{
+          position:'fixed',
+          bottom: TAB_H,
+          left:0, right:0,
+          height:'60vh',
+          background:'var(--bg-panel)',
+          borderTop:'2px solid var(--acc-teal)',
+          borderRadius:'14px 14px 0 0',
+          overflow:'hidden',
+          zIndex:40,
+          boxShadow:'0 -4px 24px rgba(0,0,0,0.5)',
+        }}>
+          <Sidebar
+            candidates={candidates} selected={selected}
+            onSelect={handleSelect} phase={phase}
+            onPhaseChange={handlePhaseChange} mobile
+          />
+        </div>
+      )}
+
+      {/* 상세 오버레이 — 탭바 위에 absolute */}
+      {mobTab === 'detail' && (
+        <div style={{
+          position:'fixed',
+          bottom: TAB_H,
+          left:0, right:0,
+          height:'68vh',
+          background:'var(--bg-panel)',
+          borderTop:'2px solid var(--acc-teal)',
+          borderRadius:'14px 14px 0 0',
+          overflow:'hidden',
+          zIndex:40,
+          boxShadow:'0 -4px 24px rgba(0,0,0,0.5)',
+        }}>
+          <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
+        </div>
+      )}
+
     </div>
   )
 }
