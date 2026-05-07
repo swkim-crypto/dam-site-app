@@ -1,8 +1,32 @@
 import React from 'react'
 import { BASIN, PHASES } from '../data/candidates.js'
 
-export default function Header({ phase }) {
+export default function Header({ phase, mobile }) {
   const meta = PHASES[phase] ?? PHASES[1]
+
+  if (mobile) {
+    return (
+      <div style={{
+        height: 44, background: 'var(--bg-panel)',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center',
+        padding: '0 14px', gap: 10, flexShrink: 0, zIndex: 100,
+      }}>
+        <div style={{ width:3, height:20, background:'var(--acc-teal)', borderRadius:2, flexShrink:0 }} />
+        <div style={{ fontFamily:'var(--font-mono)', fontSize:13, fontWeight:700, color:'var(--acc-teal)', letterSpacing:'0.06em' }}>
+          {BASIN.id}
+        </div>
+        <div style={{ fontSize:10, color:'var(--text-sec)', fontFamily:'var(--font-mono)' }}>
+          {meta.label} 분석
+        </div>
+        <div style={{ flex:1 }} />
+        <div style={{ fontSize:9, color:'var(--text-sec)', fontFamily:'var(--font-mono)' }}>
+          {meta.date}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ height:52, background:'var(--bg-panel)', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 20px', gap:16, flexShrink:0, zIndex:100 }}>
       <div style={{ width:3, height:24, background:'var(--acc-teal)', borderRadius:2, flexShrink:0 }} />
