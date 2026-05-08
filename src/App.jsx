@@ -34,7 +34,7 @@ export default function App() {
 
   return (
     <>
-      {/* ── 데스크탑 레이아웃 ── */}
+      {/* ── 데스크탑 ── */}
       <div className="desktop-layout">
         <Header phase={phase} />
         <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
@@ -46,27 +46,25 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── 모바일 레이아웃 ── */}
+      {/* ── 모바일 ── */}
       <div className="mobile-layout">
-        {/* 헤더 */}
         <Header phase={phase} mobile />
 
-        {/* 지도 — 항상 표시 */}
         <div className="mobile-map">
           <MapView candidates={candidates} selected={selected} heightM={heightM} onSelect={handleSelect} />
         </div>
 
-        {/* 목록 서랍 */}
-        <div className={`mobile-drawer ${mobTab === 'list' ? 'drawer-open' : ''}`}>
-          <Sidebar candidates={candidates} selected={selected} onSelect={handleSelect} phase={phase} onPhaseChange={handlePhaseChange} mobile />
+        {/* 서랍 하나만 — 탭에 따라 내용 전환 */}
+        <div className={`mobile-drawer ${mobTab !== 'map' ? 'drawer-open' : ''}`}>
+          {mobTab === 'list' && (
+            <Sidebar candidates={candidates} selected={selected} onSelect={handleSelect} phase={phase} onPhaseChange={handlePhaseChange} mobile />
+          )}
+          {mobTab === 'detail' && (
+            <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
+          )}
         </div>
 
-        {/* 상세 서랍 */}
-        <div className={`mobile-drawer ${mobTab === 'detail' ? 'drawer-open' : ''}`}>
-          <DetailPanel candidate={selected} heightM={heightM} onHeightChange={setHeightM} mobile />
-        </div>
-
-        {/* 하단 탭 바 */}
+        {/* 탭 바 */}
         <div className="mobile-tabbar">
           {tabs.map(t => (
             <button
