@@ -1,5 +1,5 @@
 import React from 'react'
-import { PRIORITY_CONFIG, ANALYSIS_INFO } from '../data/candidates.js'
+import { PRIORITY_CONFIG } from '../data/candidates.js'
 
 const REGION_ORDER = [
   'Middle Basin',
