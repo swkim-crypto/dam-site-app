@@ -669,3 +669,6 @@ export const PRIORITY_CONFIG = {
   '검토필요': { color: '#3b82f6', order: 3 },
   '보류': { color: '#9ca3af', order: 4 }
 };
+export function calcFsl(site, height) {
+  return site.bed + height;
+}
