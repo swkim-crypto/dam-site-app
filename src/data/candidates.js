@@ -693,3 +693,9 @@ export function estimateEvap(site, height) {
   const area = estimateArea(site, height);
   return (area * 1.5).toFixed(1); // 1.5m 증발 가정
 }
+export const ANALYSIS_INFO = {
+  analysisDate: '2024-05-12',
+  method: 'SRTM GL1 30m + Flood-fill',
+  basin: 'Nam Ngiep',
+  totalSites: 39
+};
