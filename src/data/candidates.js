@@ -663,3 +663,9 @@ export const candidates = [
     note: 'Auto-generated candidate site'
   },
 ];
+export const PRIORITY_CONFIG = {
+  '최우선': { color: '#ef4444', order: 1 },
+  '우선': { color: '#f59e0b', order: 2 },
+  '검토필요': { color: '#3b82f6', order: 3 },
+  '보류': { color: '#9ca3af', order: 4 }
+};
