@@ -672,3 +672,24 @@ export const PRIORITY_CONFIG = {
 export function calcFsl(site, height) {
   return site.bed + height;
 }
+export const HEIGHT_STEPS = [40, 50, 60, 70, 80, 90, 100, 110, 120];
+
+export function estimateVolume(site, height) {
+  // 간단한 추정 (실제는 profiles 기반 계산)
+  return site.baseV * (height / site.baseH);
+}
+
+export function estimateArea(site, height) {
+  return site.baseArea * (height / site.baseH);
+}
+
+export function calcEfficiency(site, height) {
+  const volume = estimateVolume(site, height);
+  const damLength = damLengths[site.id]?.[height] || 0;
+  return damLength > 0 ? (volume / damLength).toFixed(1) : 0;
+}
+
+export function estimateEvap(site, height) {
+  const area = estimateArea(site, height);
+  return (area * 1.5).toFixed(1); // 1.5m 증발 가정
+}
