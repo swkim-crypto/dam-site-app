@@ -52,7 +52,7 @@ export const damLengths = {
     "90": 246,
     "100": 156,
     "110": 82,
-    "120": None
+    "120": null
   },
   "S6": {
     "40": 5897,
@@ -84,8 +84,8 @@ export const damLengths = {
     "80": 348,
     "90": 283,
     "100": 169,
-    "110": None,
-    "120": None
+    "110": null,
+    "120": null
   },
   "S9": {
     "40": 5227,
@@ -107,7 +107,7 @@ export const damLengths = {
     "90": 311,
     "100": 158,
     "110": 53,
-    "120": None
+    "120": null
   },
   "S11": {
     "40": 6000,
@@ -117,8 +117,8 @@ export const damLengths = {
     "80": 583,
     "90": 511,
     "100": 20,
-    "110": None,
-    "120": None
+    "110": null,
+    "120": null
   },
   "S12": {
     "40": 6000,
@@ -183,8 +183,8 @@ export const damLengths = {
     "80": 1412,
     "90": 120,
     "100": 48,
-    "110": None,
-    "120": None
+    "110": null,
+    "120": null
   },
   "S18": {
     "40": 5955,
@@ -238,8 +238,8 @@ export const damLengths = {
     "80": 5833,
     "90": 5790,
     "100": 30,
-    "110": None,
-    "120": None
+    "110": null,
+    "120": null
   },
   "S23": {
     "40": 6000,
@@ -292,9 +292,9 @@ export const damLengths = {
     "70": 455,
     "80": 320,
     "90": 132,
-    "100": None,
-    "110": None,
-    "120": None
+    "100": null,
+    "110": null,
+    "120": null
   },
   "S28": {
     "40": 6000,
@@ -322,12 +322,12 @@ export const damLengths = {
     "40": 531,
     "50": 448,
     "60": 250,
-    "70": None,
-    "80": None,
-    "90": None,
-    "100": None,
-    "110": None,
-    "120": None
+    "70": null,
+    "80": null,
+    "90": null,
+    "100": null,
+    "110": null,
+    "120": null
   },
   "S31": {
     "40": 5113,
@@ -345,11 +345,11 @@ export const damLengths = {
     "50": 666,
     "60": 547,
     "70": 135,
-    "80": None,
-    "90": None,
-    "100": None,
-    "110": None,
-    "120": None
+    "80": null,
+    "90": null,
+    "100": null,
+    "110": null,
+    "120": null
   },
   "S33": {
     "40": 6000,
@@ -366,12 +366,12 @@ export const damLengths = {
     "40": 1920,
     "50": 156,
     "60": 53,
-    "70": None,
-    "80": None,
-    "90": None,
-    "100": None,
-    "110": None,
-    "120": None
+    "70": null,
+    "80": null,
+    "90": null,
+    "100": null,
+    "110": null,
+    "120": null
   },
   "S35": {
     "40": 6000,
@@ -387,13 +387,13 @@ export const damLengths = {
   "S36": {
     "40": 232,
     "50": 75,
-    "60": None,
-    "70": None,
-    "80": None,
-    "90": None,
-    "100": None,
-    "110": None,
-    "120": None
+    "60": null,
+    "70": null,
+    "80": null,
+    "90": null,
+    "100": null,
+    "110": null,
+    "120": null
   },
   "S37": {
     "40": 6000,
