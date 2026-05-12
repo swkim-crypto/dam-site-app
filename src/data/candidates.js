@@ -1,3 +1,4 @@
+import { damLengths } from './damLengths.js'
 export const candidates = [
   {
     id: 'S1',
