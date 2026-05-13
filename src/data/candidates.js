@@ -935,3 +935,49 @@ export const candidates = [
     note: 'Auto-generated candidate site'
   },
 ];
+
+export const ANALYSIS_INFO = {
+  basin: {
+    id: 'NAM NGIEP',
+    namKo: '남 니아프',
+  },
+  demSource: 'SRTM GL1 30m',
+  method: 'Flood-fill + Cross Profile',
+  analysisDate: '2026-05-13',
+  criterion: '저수량 ≥ 5 Mm³',
+};
+
+export const PRIORITY_CONFIG = {
+  '최우선': { color: '#00C4B4' },
+  '우선':   { color: '#1D9E75' },
+  '검토필요': { color: '#BA7517' },
+  '보류':   { color: '#E05C5C' },
+};
+
+export const HEIGHT_STEPS = [40, 50, 60, 70, 80, 90, 100, 110, 120];
+
+export function calcFsl(c, h) {
+  return c.bed != null ? c.bed + h : null;
+}
+
+export function estimateVolume(c, h) {
+  if (!c.baseV || !c.baseH) return 0;
+  const ratio = h / c.baseH;
+  return Math.round(c.baseV * Math.pow(ratio, 2.5) * 10) / 10;
+}
+
+export function estimateArea(c, h) {
+  if (!c.baseArea || c.baseArea === 0) return null;
+  const ratio = h / c.baseH;
+  return Math.round(c.baseArea * Math.pow(ratio, 2) * 10) / 10;
+}
+
+export function calcEfficiency(v, a) {
+  if (!v || !a) return null;
+  return Math.round((v / a) * 10) / 10;
+}
+
+export function estimateEvap(a) {
+  if (!a) return null;
+  return Math.round(a * 1.5 * 10) / 10;
+}
