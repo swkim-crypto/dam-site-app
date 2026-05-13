@@ -6,14 +6,19 @@ import Header from './components/Header.jsx'
 import { candidates } from './data/candidates.js'
 
 export default function App() {
-  const [selected, setSelected] = useState(candidates[0])
+  const [selected, setSelected] = useState(null)
   const [heightM, setHeightM] = useState(60)
   const [mobTab, setMobTab] = useState('map')
 
   const handleSelect = (c) => {
-    setSelected(c)
-    setHeightM(60)
-    setMobTab('detail')
+    if (c === null) {
+      setSelected(null)
+      setMobTab('map')
+    } else {
+      setSelected(c)
+      setHeightM(60)
+      setMobTab('detail')
+    }
   }
 
   const tabs = [

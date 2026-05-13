@@ -8,7 +8,6 @@ function nearestStep(h) {
 }
 
 const isMobile = () => window.innerWidth <= 768
-// 모바일 탭바 높이 (App.jsx와 동일)
 const MOB_TAB_H = 52
 
 export default function MapView({ candidates, selected, heightM, onSelect }) {
@@ -29,11 +28,12 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
     leafletMap.current = map
   }, [])
 
-  // 수몰 폴리곤
+  // 수몰 폴리곤 — 선택된 후보지만, 선택 해제 시 제거
   useEffect(() => {
     const L = window.L, map = leafletMap.current
-    if (!L || !map || !selected) return
+    if (!L || !map) return
     if (floodLayer.current) { floodLayer.current.remove(); floodLayer.current = null }
+    if (!selected) return  // 선택 없으면 폴리곤 없음
 
     const step = nearestStep(heightM)
     const polyData = floodPolygons[selected.id]?.[String(step)]
@@ -44,15 +44,14 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
         map.createPane('floodPane')
         map.getPane('floodPane').style.zIndex = 350
       }
-      const layer = window.L.geoJSON({ type:'Feature', geometry: polyData }, {
-        pane:'floodPane',
-        style:{ color:'#1a7fbd', weight:1.5, opacity:0.85, fillColor:'#1e78ff', fillOpacity:0.30 }
-      }).addTo(map)
-      floodLayer.current = layer
+      floodLayer.current = window.L.geoJSON(
+        { type:'Feature', geometry: polyData },
+        { pane:'floodPane', style:{ color:'#1a7fbd', weight:1.5, opacity:0.85, fillColor:'#1e78ff', fillOpacity:0.30 } }
+      ).addTo(map)
     } catch(e) { console.error('Flood polygon error:', e) }
   }, [selected, heightM])
 
-  // 마커
+  // 마커 — 선택 없으면 전체 표시, 선택 있으면 선택된 것만 강조
   useEffect(() => {
     const L = window.L, map = leafletMap.current
     if (!L || !map) return
@@ -60,17 +59,20 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
     markers.current = {}
 
     candidates.forEach(c => {
-      const cfg   = PRIORITY_CONFIG[c.priority]
+      const cfg   = PRIORITY_CONFIG[c.priority] || { color: '#BA7517' }
       const isSel = selected?.id === c.id
+      // 선택된 후보지가 있을 때: 선택된 것만 크게, 나머지는 흐리게 작게
+      const dimmed = selected && !isSel
+      const sz    = isSel ? 46 : 30
+      const alpha = dimmed ? '33' : (selected ? '99' : 'cc')
       const v     = isSel ? estimateVolume(c, heightM) : c.baseV
       const fsl   = isSel ? calcFsl(c, heightM) : c.baseFsl
       const h     = isSel ? heightM : c.baseH
-      const sz    = isSel ? 46 : 30
 
       const icon = L.divIcon({
         className:'',
         iconSize:[sz,sz], iconAnchor:[sz/2,sz/2],
-        html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${cfg.color}${isSel?'':'99'};border:${isSel?3:2}px solid ${isSel?'#fff':cfg.color};display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:${isSel?12:9}px;font-weight:700;color:${isSel?'#0a1628':'#fff'};box-shadow:0 0 ${isSel?18:6}px ${cfg.color}99;cursor:pointer;">${c.id}</div>`,
+        html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${cfg.color}${alpha};border:${isSel?3:2}px solid ${isSel?'#fff':cfg.color}${dimmed?'55':''};display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:${isSel?12:9}px;font-weight:700;color:${isSel?'#0a1628':'#fff'};box-shadow:0 0 ${isSel?18:dimmed?2:6}px ${cfg.color}${dimmed?'33':'99'};cursor:pointer;">${c.id}</div>`,
       })
 
       const bedStr = c.bed   != null ? `Bed: ${c.bed} m EL<br/>` : ''
@@ -83,7 +85,11 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
       const marker = L.marker([c.lat, c.lon], { icon, zIndexOffset: isSel ? 1000 : 0 })
         .addTo(map)
         .bindTooltip(tip, { permanent:false, direction:'top', offset:[0,-sz/2-4], opacity:1, className:'dam-tip' })
-        .on('click', () => onSelect(c))
+        .on('click', () => {
+          // 이미 선택된 것 클릭 시 선택 해제
+          if (isSel) onSelect(null)
+          else onSelect(c)
+        })
       markers.current[c.id] = marker
     })
   }, [candidates, selected, heightM, onSelect])
@@ -97,14 +103,16 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
 
   const fslDisplay = selected ? calcFsl(selected, heightM) : null
   const mob = isMobile()
-  // 모바일: 오버레이를 탭바 위에 위치
   const bottomOffset = mob ? MOB_TAB_H + 8 : 24
+
+  // 범례: candidates의 실제 priority 값 기준
+  const legendItems = Object.entries(PRIORITY_CONFIG).map(([label, cfg]) => ({ label, color: cfg.color }))
 
   return (
     <div style={{ width:'100%', height:'100%', position:'relative' }}>
       <div ref={mapRef} style={{ width:'100%', height:'100%' }} />
 
-      {/* 수몰 정보 오버레이 — 상단 중앙 */}
+      {/* 수몰 정보 오버레이 */}
       {selected && (
         <div style={{
           position:'absolute', top:14, left:'50%', transform:'translateX(-50%)',
@@ -116,19 +124,23 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
           <span style={{ fontSize:11, color:'#a0bcd0', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>수몰 영역</span>
           <span style={{ fontSize:13, fontWeight:700, color:'#1e78ff', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>H = {heightM}m</span>
           <span style={{ fontSize:11, color:'#a0bcd0', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>
-            {fslDisplay != null ? `FSL ${fslDisplay}m EL` : '소유역 분석 후 FSL 확정'}
+            {fslDisplay != null ? `FSL ${fslDisplay}m EL` : 'FSL 미정'}
           </span>
+          <span
+            onClick={() => onSelect(null)}
+            style={{ fontSize:11, color:'#E05C5C', fontFamily:'var(--font-mono)', cursor:'pointer', marginLeft:4, whiteSpace:'nowrap' }}
+          >✕ 해제</span>
         </div>
       )}
 
-      {/* 범례 — 좌하단, 모바일은 탭바 위로 */}
+      {/* 범례 */}
       <div style={{
         position:'absolute', bottom: bottomOffset, left:16,
         background:'rgba(13,33,55,0.92)', border:'1px solid rgba(255,255,255,0.08)',
         borderRadius:10, padding:'8px 12px', zIndex:1000, backdropFilter:'blur(8px)',
       }}>
         <div style={{ fontSize:10, color:'#5a7a90', fontFamily:'var(--font-mono)', letterSpacing:'0.12em', marginBottom:6 }}>범례</div>
-        {[{color:'#1D9E75',label:'최우선'},{color:'#1A7FBD',label:'2순위'},{color:'#BA7517',label:'검토필요'}].map(i=>(
+        {legendItems.map(i => (
           <div key={i.label} style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4, fontSize:11 }}>
             <div style={{ width:9, height:9, borderRadius:'50%', background:i.color, boxShadow:`0 0 5px ${i.color}88`, flexShrink:0 }}/>
             <span style={{ color:'#c0d4e0', fontFamily:'var(--font-mono)' }}>{i.label}</span>
