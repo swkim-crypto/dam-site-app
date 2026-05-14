@@ -935,3 +935,25 @@ export const candidates = [
     note: 'Auto-generated candidate site'
   },
 ];
+export const ANALYSIS_INFO = {
+  basin: { id: 'nam_ngiep', namKo: '남응이엡 유역' },
+  demSource: 'SRTM 30m',
+  method: 'DEM 기반 자동 분석',
+  analysisDate: '2026-05-14',
+  criterion: '최소 저수량 5Mm³'
+};
+
+export const PRIORITY_CONFIG = {
+  '최우선': { color: '#e74c3c' },
+  '우선':   { color: '#e67e22' },
+  '검토필요': { color: '#3498db' },
+  '보류':   { color: '#95a9a6' }
+};
+
+export const HEIGHT_STEPS = [40, 50, 60, 70, 80, 90, 100, 110, 120];
+
+export function estimateVolume(c, h) { return c.baseV * (h / c.baseH) ** 2.5; }
+export function estimateArea(c, h) { return c.baseArea * (h / c.baseH) ** 2; }
+export function calcFsl(c, h) { return c.bed + h; }
+export function calcEfficiency(v, a) { return a > 0 ? v / a : 0; }
+export function estimateEvap(a) { return a * 1.5; }
