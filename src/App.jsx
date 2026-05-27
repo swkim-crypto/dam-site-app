@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
 import MapView from './components/MapView.jsx'
 import Header from './components/Header.jsx'
-import { candidates } from './data/candidates.js'
+import { DAM_CANDIDATES as candidates } from './data/candidates.js'
 
 export default function App() {
   const [selected, setSelected] = useState(null)
