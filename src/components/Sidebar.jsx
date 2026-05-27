@@ -16,10 +16,7 @@ const REGION_LABELS = {
 }
 
 export default function Sidebar({ candidates, selected, onSelect, mobile }) {
-  const grouped = REGION_ORDER.reduce((acc, r) => {
-    acc[r] = candidates.filter((c) => c.region === r)
-    return acc
-  }, {})
+  const grouped = { 'All': candidates }
 
   return (
     <div
@@ -164,24 +161,10 @@ export default function Sidebar({ candidates, selected, onSelect, mobile }) {
 
       {/* 후보지 리스트 */}
       <div style={{ overflow: 'auto', flex: 1 }}>
-        {REGION_ORDER.map((region) => {
-          const items = grouped[region]
+        {[['All', candidates]].map(([region, items]) => {
           if (!items?.length) return null
           return (
             <div key={region}>
-              <div
-                style={{
-                  padding: mobile ? '10px 14px 4px' : '10px 18px 5px',
-                  fontSize: 10,
-                  color: 'var(--text-sec)',
-                  fontFamily: 'var(--font-mono)',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  borderTop: '1px solid var(--border)',
-                }}
-              >
-                {REGION_LABELS[region]}
-              </div>
               {items.map((c) => {
                 const cfg = PRIORITY_CONFIG[c.priority]
                 const isSel = selected?.id === c.id
