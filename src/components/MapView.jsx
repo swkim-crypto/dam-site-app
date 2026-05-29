@@ -16,13 +16,12 @@ const MOB_TAB_H = 52
    하상고도(수심) 데이터가 없으므로, 댐 지점을 지나 "상류 방향"에
    수직인 선으로 수몰 폴리곤을 잘라 상류 반쪽만 표시한다.
 
-   상류 방향 = (하류 앵커 → 댐) 벡터.
-   하류 앵커는 이 후보군 전체의 하류에 위치한 Xe Lanong 3(계획댐).
-   특정 후보지의 강 흐름이 달라 잘리는 방향이 어긋나면
-   FLOW_OVERRIDE 에 그 후보지의 "상류 나침반 방위(도)"를 넣어 보정한다.
-   (0=북, 90=동, 180=남, 270=서 — 물이 차오르는 쪽을 가리킴)
+   상류 방향은 후보지별로 백엔드(01)가 하천 흐름에서 산출한 upstreamBearing(도)을
+   우선 사용한다. 없으면 단일 앵커(Xe Lanong 3) 폴백. 특정 후보지가 어긋나면
+   FLOW_OVERRIDE 에 "상류 나침반 방위(도)"를 직접 넣어 최우선 보정한다.
+   (0=북, 90=동, 180=남, 270=서 — 물이 차오르는 쪽)
 */
-const DOWNSTREAM_ANCHOR = { lat: 16.0351, lon: 106.677 }  // Xe Lanong 3 (하류)
+const DOWNSTREAM_ANCHOR = { lat: 16.0351, lon: 106.677 }  // 폴백용 하류 앵커(Xe Lanong 3)
 const FLOW_OVERRIDE = {
   // 예) 'S62': 350,   // S62 상류가 거의 정북이면
 }
@@ -85,11 +84,23 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
   useEffect(() => {
     if (leafletMap.current || !window.L) return
     const map = window.L.map(mapRef.current, {
-      center:[16.18, 106.62], zoom:10, zoomControl:true, attributionControl:true
+      center:[16.45, 106.45], zoom:9, zoomControl:true, attributionControl:true
     })
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom:18, attribution:'© OpenStreetMap | SRTM GL1'
-    }).addTo(map)
+    const L = window.L
+    // 베이스맵 (위성 영상 우선) — 우상단 레이어 컨트롤로 전환
+    const gHyb = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom:20, subdomains:['mt0','mt1','mt2','mt3'], attribution:'Imagery © Google' })
+    const gSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom:20, subdomains:['mt0','mt1','mt2','mt3'], attribution:'Imagery © Google' })
+    const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom:19, attribution:'Imagery © Esri' })
+    const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:18, attribution:'© OpenStreetMap' })
+    gHyb.addTo(map)   // 기본: 구글 위성 + 지명
+    L.control.layers(
+      { '구글 위성+지명': gHyb, '구글 위성(영상만)': gSat, 'Esri 위성': esri, 'OSM 지도': osm },
+      null, { position:'topright', collapsed:true }
+    ).addTo(map)
     leafletMap.current = map
   }, [])
 
@@ -105,10 +116,14 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
     if (!polyData) return
 
     // 수몰 영역을 댐 상류 방향으로만 한정
+    // 상류 방위: FLOW_OVERRIDE > 백엔드 산출(upstreamBearing) > 단일앵커 폴백
+    const flowBearing = FLOW_OVERRIDE[selected.id] != null
+      ? FLOW_OVERRIDE[selected.id]
+      : (selected.upstreamBearing != null ? selected.upstreamBearing : null)
     const clipped = clipFloodUpstream(
       polyData,
       { lat: selected.lat, lon: selected.lon },
-      FLOW_OVERRIDE[selected.id]
+      flowBearing
     )
 
     try {
