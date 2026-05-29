@@ -74,8 +74,16 @@ export default function ProfileChart({ candidate, heightM }) {
       })
       flush()
     }
-    if (mode === 'cross') buildWater(p => p.d <= 0)   // 상류만
-    else                  buildWater(() => true)        // 전체
+    if (mode === 'cross') {
+      buildWater(p => p.d <= 0)   // 상류만
+    } else {
+      // 종단면: d=0부터 상류 방향으로 진행하다 elev > FSL 이면 그 지점에서 stop
+      let cutoff = Infinity
+      for (const p of pts) {
+        if (p.elev > fsl) { cutoff = p.d; break }
+      }
+      buildWater(p => p.d < cutoff)
+    }
 
     // ── 횡단면: 역삼각형(▽) 댐 ──
     let damTriPath = null, damLength = null
