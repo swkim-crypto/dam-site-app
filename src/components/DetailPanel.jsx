@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { calcFsl, calcEfficiency, estimateEvap, PRIORITY_CONFIG, HEIGHT_STEPS } from '../data/candidates.js'
 import { damLengths } from '../data/damLengths.js'
 import { profiles } from '../data/profiles.js'
@@ -50,6 +50,9 @@ function calcFromLong(candidate, heightM) {
 
 const isApproxMode = (c) => c.bed == null || c.baseArea == null
 
+// 5m 해상도 버튼. 10m는 candidates.js의 HEIGHT_STEPS 사용.
+const STEPS_5 = [40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120]
+
 function StatCard({ label, value, unit, sub, mobile }) {
   const display = value == null ? '—' : value
   return (
@@ -66,6 +69,17 @@ function StatCard({ label, value, unit, sub, mobile }) {
 
 export default function DetailPanel({ candidate, heightM, onHeightChange, mobile }) {
   const approx = candidate ? isApproxMode(candidate) : false
+
+  // 높이 버튼 간격 토글 (10m | 5m). 숫자 계산만 5m로 세분 — 수몰폴리곤·댐길이는
+  // 03에서 구워진 단계라 가장 가까운 baked 단계로 스냅된다(별도 재생성 전까지).
+  const [stepMode, setStepMode] = useState(10)
+  const heightSteps = stepMode === 5 ? STEPS_5 : HEIGHT_STEPS
+  const switchStepMode = (m) => {
+    setStepMode(m)
+    const arr = m === 5 ? STEPS_5 : HEIGHT_STEPS
+    const nearest = arr.reduce((a, b) => Math.abs(b - heightM) < Math.abs(a - heightM) ? b : a)
+    if (nearest !== heightM) onHeightChange(nearest)
+  }
 
   const stats = useMemo(() => {
     if (!candidate) return null
@@ -122,10 +136,21 @@ export default function DetailPanel({ candidate, heightM, onHeightChange, mobile
 
         {/* 높이 조정 */}
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-acc)', borderRadius:8, padding: mobile ? '10px 14px' : '8px 12px', marginBottom:8 }}>
-          <div style={{ display:'flex', alignItems:'baseline', gap:0, marginBottom:5 }}>
+          <div style={{ display:'flex', alignItems:'baseline', gap:0, marginBottom:5, flexWrap:'wrap', rowGap:6 }}>
             <span style={{ fontSize:11, color:'var(--acc-teal)', fontFamily:'var(--font-mono)', letterSpacing:'0.08em', marginRight:10 }}>높이</span>
             <span style={{ fontFamily:'var(--font-mono)', fontSize: mobile ? 32 : 28, fontWeight:700, color:'var(--acc-teal)', lineHeight:1 }}>{heightM}</span>
             <span style={{ fontSize:13, color:'#c0d4e0', marginLeft:3 }}>m</span>
+            {/* 10m | 5m 간격 토글 */}
+            <div style={{ display:'flex', marginLeft:12, border:'1px solid rgba(255,255,255,0.15)', borderRadius:6, overflow:'hidden', flexShrink:0, alignSelf:'center' }}>
+              {[10,5].map(m => (
+                <button key={m} onClick={() => switchStepMode(m)} style={{
+                  padding:'2px 9px', fontSize:11, fontFamily:'var(--font-mono)', cursor:'pointer',
+                  background: stepMode===m ? 'var(--acc-teal)' : 'transparent',
+                  color: stepMode===m ? 'var(--bg-deep)' : '#a0bcd0',
+                  border:'none', fontWeight: stepMode===m ? 700 : 400,
+                }}>{m}m</button>
+              ))}
+            </div>
             <div style={{ flex:1 }} />
             {/* 댐 길이 배지 */}
             {damLength != null && (
@@ -146,10 +171,10 @@ export default function DetailPanel({ candidate, heightM, onHeightChange, mobile
               </div>
             )}
           </div>
-          <div style={{ display:'flex', gap:3 }}>
-            {HEIGHT_STEPS.map(h => (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+            {heightSteps.map(h => (
               <button key={h} onClick={() => onHeightChange(h)} style={{
-                flex:1, padding: mobile ? '5px 0' : '3px 0',
+                flex: stepMode === 5 ? '1 1 30px' : 1, padding: mobile ? '5px 0' : '3px 0',
                 background: h===heightM ? 'var(--acc-teal)' : 'transparent',
                 color: h===heightM ? 'var(--bg-deep)' : '#a0bcd0',
                 border:`1px solid ${h===heightM ? 'var(--acc-teal)' : 'rgba(255,255,255,0.12)'}`,
