@@ -17,14 +17,19 @@ const GOOGLE_MAP_ID   = (import.meta.env && import.meta.env.VITE_GOOGLE_MAP_ID) 
 
 let _gmapsPromise = null
 function loadGoogleMaps(key) {
-  if (window.google && window.google.maps) return Promise.resolve(window.google.maps)
+  if (window.google && window.google.maps && window.google.maps.Map) return Promise.resolve(window.google.maps)
   if (_gmapsPromise) return _gmapsPromise
   _gmapsPromise = new Promise((resolve, reject) => {
+    const cb = '__damGmapsReady'
+    // 콜백이 호출되는 시점엔 core(Map) + libraries(marker)가 모두 준비됨
+    window[cb] = () => {
+      if (window.google && window.google.maps && window.google.maps.Map) resolve(window.google.maps)
+      else reject(new Error('google.maps 미초기화'))
+    }
     const s = document.createElement('script')
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=maps,marker&loading=async`
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=marker&callback=${cb}`
     s.async = true
-    s.onload = () => resolve(window.google.maps)
-    s.onerror = () => reject(new Error('Google Maps 로드 실패'))
+    s.onerror = () => reject(new Error('스크립트 로드 실패(네트워크/도메인 차단)'))
     document.head.appendChild(s)
   })
   return _gmapsPromise
@@ -102,16 +107,16 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
   const gmap       = useRef(null)
   const markers    = useRef({})
   const floodLayer = useRef(null)
-  const [status, setStatus] = useState('loading')  // loading | ready | nokey | error
+  const [status, setStatus] = useState('loading')  // loading | ready | nokey | error | autherror
 
   // 지도 초기화 (Google Maps 로드 후)
   useEffect(() => {
     if (!GOOGLE_MAPS_KEY || GOOGLE_MAPS_KEY === 'YOUR_API_KEY_HERE') { setStatus('nokey'); return }
     let cancelled = false
+    // 키/리퍼러/결제 등 '인증' 실패는 스크립트 로드 후 이 훅으로 통지된다
+    window.gm_authFailure = () => { if (!cancelled) setStatus('autherror') }
     loadGoogleMaps(GOOGLE_MAPS_KEY)
-      .then(async (maps) => {
-        await maps.importLibrary('maps')
-        await maps.importLibrary('marker')
+      .then((maps) => {
         if (cancelled || gmap.current || !mapRef.current) return
         gmap.current = new maps.Map(mapRef.current, {
           center: { lat: 16.45, lng: 106.45 }, zoom: 9,
@@ -128,7 +133,7 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
         })
         setStatus('ready')
       })
-      .catch(() => { if (!cancelled) setStatus('error') })
+      .catch((e) => { console.error('[MapView] 지도 초기화 실패:', e); if (!cancelled) setStatus('error') })
     return () => { cancelled = true }
   }, [])
 
@@ -247,7 +252,8 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
         }}>
           {status === 'loading' && '지도 불러오는 중…'}
           {status === 'nokey'   && 'Google Maps API 키 미설정 — Render 환경변수 VITE_GOOGLE_MAPS_KEY 를 추가하세요.'}
-          {status === 'error'   && '지도 로드 실패 — API 키/결제/Maps JavaScript API 활성화를 확인하세요.'}
+          {status === 'error'   && '지도 로드 실패 — 콘솔의 [MapView] 에러 또는 네트워크 차단을 확인하세요.'}
+          {status === 'autherror' && '구글 인증 거부 — 키 리퍼러 제한 / 결제 연동 / Maps JavaScript API 활성화를 확인하세요. (콘솔의 …MapError 줄 참고)'}
         </div>
       )}
 
