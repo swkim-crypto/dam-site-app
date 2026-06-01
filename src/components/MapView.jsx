@@ -10,17 +10,18 @@ function nearestStep(h) {
 const isMobile = () => window.innerWidth <= 768
 const MOB_TAB_H = 52
 
-/* 구글어스(3D) 링크
-   후보지 좌표로 기울인 3D 시점을 새 탭에서 연다. Leaflet은 그대로 유지.
-   @위도,경도,고도a,거리d,FOVy,방위h,틸트t,롤r
-   - 고도(a): 룩앳 지점 해발(대략 하상고도 bed, 없으면 300m)
-   - 틸트(t): 55° → 비스듬한 3D 조감
-   바꾸려면 RANGE_D(카메라 거리)·TILT_T만 조정. */
-const GE_RANGE_D = 4000
-const GE_TILT_T  = 55
+/* 구글어스(3D) 링크 — Leaflet은 그대로 유지, 새 탭으로만 연다.
+   ⚠️ 카메라 deep-link(@lat,lon,...a,...d,...t,...r)는 구글어스 웹이 새 탭에서
+   처음 켜질 때(cold load) 자주 무시하고 기본 지구본만 띄운다 → "변화 없음".
+   그래서 좌표로 '강제 이동'이 보장되는 search URL을 쓴다. 도착 후 드래그로
+   기울이면 3D 지형이 보인다. (카메라 deep-link는 아래 주석 참고) */
 function googleEarthUrl(c) {
-  const elev = (c && c.bed != null) ? c.bed : 300
-  return `https://earth.google.com/web/@${c.lat},${c.lon},${elev}a,${GE_RANGE_D}d,35y,0h,${GE_TILT_T}t,0r`
+  if (!c) return 'https://earth.google.com/web/'
+  // 좌표 검색 → cold load에서도 해당 지점으로 확실히 비행
+  return `https://earth.google.com/web/search/${c.lat}%2C${c.lon}`
+  // ── 자동 틸트(3D 조감)를 원하고 cold-load 무시가 괜찮다면 위 대신:
+  // const elev = c.bed != null ? c.bed : 300
+  // return `https://earth.google.com/web/@${c.lat},${c.lon},${elev}a,4000d,35y,0h,55t,0r`
 }
 
 /* ──────────────────────────────────────────────────────────
