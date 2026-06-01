@@ -10,6 +10,19 @@ function nearestStep(h) {
 const isMobile = () => window.innerWidth <= 768
 const MOB_TAB_H = 52
 
+/* 구글어스(3D) 링크
+   후보지 좌표로 기울인 3D 시점을 새 탭에서 연다. Leaflet은 그대로 유지.
+   @위도,경도,고도a,거리d,FOVy,방위h,틸트t,롤r
+   - 고도(a): 룩앳 지점 해발(대략 하상고도 bed, 없으면 300m)
+   - 틸트(t): 55° → 비스듬한 3D 조감
+   바꾸려면 RANGE_D(카메라 거리)·TILT_T만 조정. */
+const GE_RANGE_D = 4000
+const GE_TILT_T  = 55
+function googleEarthUrl(c) {
+  const elev = (c && c.bed != null) ? c.bed : 300
+  return `https://earth.google.com/web/@${c.lat},${c.lon},${elev}a,${GE_RANGE_D}d,35y,0h,${GE_TILT_T}t,0r`
+}
+
 /* ──────────────────────────────────────────────────────────
    수몰 영역 상류 한정(clip)
    ────────────────────────────────────────────────────────────
@@ -206,13 +219,19 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
           background:'rgba(13,33,55,0.92)', border:'1px solid rgba(30,120,255,0.4)',
           borderRadius:8, padding:'6px 14px', zIndex:1000,
           backdropFilter:'blur(8px)', display:'flex', gap:12, alignItems:'center',
-          maxWidth:'90vw',
+          flexWrap:'wrap', justifyContent:'center', maxWidth:'90vw',
         }}>
           <span style={{ fontSize:11, color:'#a0bcd0', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>수몰 영역 · 상류</span>
           <span style={{ fontSize:13, fontWeight:700, color:'#1e78ff', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>H = {heightM}m</span>
           <span style={{ fontSize:11, color:'#a0bcd0', fontFamily:'var(--font-mono)', whiteSpace:'nowrap' }}>
             {fslDisplay != null ? `FSL ${fslDisplay}m EL` : 'FSL 미정'}
           </span>
+          <a
+            href={googleEarthUrl(selected)}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize:11, color:'#00c4b4', fontFamily:'var(--font-mono)', textDecoration:'none', cursor:'pointer', marginLeft:4, whiteSpace:'nowrap', borderBottom:'1px dotted #00c4b4' }}
+          >◉ 구글어스 3D ↗</a>
           <span
             onClick={() => onSelect(null)}
             style={{ fontSize:11, color:'#E05C5C', fontFamily:'var(--font-mono)', cursor:'pointer', marginLeft:4, whiteSpace:'nowrap' }}
