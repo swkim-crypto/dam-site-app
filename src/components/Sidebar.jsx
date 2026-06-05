@@ -243,6 +243,36 @@ export default function Sidebar({ candidates, selected, onSelect, mobile }) {
           )
         })}
       </div>
+
+      {/* 삼안 로고 — 패널 최하단 (둥근 알약) */}
+      <div
+        style={{
+          padding: mobile ? '12px 16px' : '12px 18px',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            width: '100%',
+            boxSizing: 'border-box',
+            background: '#ffffff',
+            borderRadius: 13,
+            padding: '7px 12px',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <img
+            src="/saman-logo.png"
+            alt="삼안 saman"
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+        </span>
+      </div>
     </div>
   )
 }
