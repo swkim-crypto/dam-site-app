@@ -3,6 +3,7 @@ import { calcFsl, calcEfficiency, estimateEvap, PRIORITY_CONFIG, HEIGHT_STEPS } 
 import { damLengths } from '../data/damLengths.js'
 import { profiles } from '../data/profiles.js'
 import ProfileChart from './ProfileChart.jsx'
+import LandcoverStats from './LandcoverStats.jsx'
 
 // long 종단면 데이터로 저수량·유효길이·수몰면적 계산
 // FSL 이하인 연속 구간(첫 FSL 초과 지점에서 stop)만 사다리꼴 적분
@@ -237,6 +238,9 @@ export default function DetailPanel({ candidate, heightM, onHeightChange, mobile
             <div style={{ fontSize: mobile ? 13 : 12, color:'#c0d4e0', lineHeight:1.6 }}>{candidate.note}</div>
           </div>
         )}
+
+        {/* 토지피복 · 수몰구역 */}
+        <LandcoverStats candidate={candidate} heightM={heightM} mobile={mobile} />
       </div>
     </div>
   )

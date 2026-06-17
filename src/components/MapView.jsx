@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { PRIORITY_CONFIG, estimateVolume, calcFsl } from '../data/candidates.js'
 import { floodPolygons } from '../data/floodPolygons.js'
+import { landcoverFlooded } from '../data/landcoverFlooded.js'
+
+/* 토지피복 오버레이 색상 (경작지/시가지) */
+const LC_COLORS = { cropland: '#f0a83c', urban: '#e0484c' }
+/* GeoJSON(Polygon/MultiPolygon) → google.maps Polygon paths 목록 (외곽+홀 지원) */
+function gjToPaths(geom) {
+  if (!geom || !geom.coordinates) return []
+  const polys = geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates]
+  return polys.map(rings => rings.map(r => r.map(([lng, lat]) => ({ lat, lng }))))
+}
 
 /* ────────────────────────────────────────────────────────────
    Google Maps JS API 설정
@@ -107,6 +117,7 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
   const gmap       = useRef(null)
   const markers    = useRef({})
   const floodLayer = useRef(null)
+  const lcLayers   = useRef([])
   const [status, setStatus] = useState('loading')  // loading | ready | nokey | error | autherror
 
   // 지도 초기화 (Google Maps 로드 후)
@@ -165,6 +176,27 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
         clickable: false, zIndex: 1, map,
       })
     } catch (e) { console.error('Flood polygon error:', e) }
+  }, [selected, heightM, status])
+
+  // 토지피복(경작지·시가지) — 수몰면 위에 표시 (이미 상류 클립된 교차 폴리곤)
+  useEffect(() => {
+    if (status !== 'ready' || !gmap.current || !window.google) return
+    const map = gmap.current
+    lcLayers.current.forEach(p => p.setMap(null)); lcLayers.current = []
+    if (!selected) return
+    const step = nearestStep(heightM)
+    const data = landcoverFlooded?.[selected.id]?.[String(step)]
+    if (!data) return
+    const draw = (geom, color) => {
+      gjToPaths(geom).forEach(paths => {
+        lcLayers.current.push(new window.google.maps.Polygon({
+          paths, strokeColor: color, strokeOpacity: 0.9, strokeWeight: 1,
+          fillColor: color, fillOpacity: 0.45, clickable: false, zIndex: 3, map,
+        }))
+      })
+    }
+    if (data.cropland) draw(data.cropland, LC_COLORS.cropland)
+    if (data.urban)    draw(data.urban,    LC_COLORS.urban)
   }, [selected, heightM, status])
 
   // 마커 — 선택 없으면 전체, 선택 있으면 선택된 것만 강조
@@ -300,6 +332,14 @@ export default function MapView({ candidates, selected, heightM, onSelect }) {
         <div style={{ borderTop:'1px solid rgba(255,255,255,0.08)', marginTop:5, paddingTop:5, display:'flex', alignItems:'center', gap:7 }}>
           <div style={{ width:16, height:9, background:'rgba(30,120,255,0.35)', border:'1.5px solid #1a7fbd', borderRadius:2, flexShrink:0 }}/>
           <span style={{ fontSize:10, color:'#c0d4e0', fontFamily:'var(--font-mono)' }}>수몰 예상 구역 (상류)</span>
+        </div>
+        <div style={{ marginTop:4, display:'flex', alignItems:'center', gap:7 }}>
+          <div style={{ width:16, height:9, background:'rgba(240,168,60,0.45)', border:'1px solid #f0a83c', borderRadius:2, flexShrink:0 }}/>
+          <span style={{ fontSize:10, color:'#c0d4e0', fontFamily:'var(--font-mono)' }}>경작지 (수몰)</span>
+        </div>
+        <div style={{ marginTop:4, display:'flex', alignItems:'center', gap:7 }}>
+          <div style={{ width:16, height:9, background:'rgba(224,72,76,0.45)', border:'1px solid #e0484c', borderRadius:2, flexShrink:0 }}/>
+          <span style={{ fontSize:10, color:'#c0d4e0', fontFamily:'var(--font-mono)' }}>시가지 (수몰)</span>
         </div>
       </div>
     </div>
