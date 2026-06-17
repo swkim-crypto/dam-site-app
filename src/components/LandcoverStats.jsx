@@ -16,10 +16,10 @@ const LC = {
 }
 const fmt = n => (n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-export default function LandcoverStats({ selected, heightM }) {
-  if (!selected) return null
+export default function LandcoverStats({ candidate, heightM, mobile }) {
+  if (!candidate) return null
   const step = nearestStep(heightM)
-  const s = landcoverStats?.[selected.id]?.[String(step)]
+  const s = landcoverStats?.[candidate.id]?.[String(step)]
 
   return (
     <div style={{
